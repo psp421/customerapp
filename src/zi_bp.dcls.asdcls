@@ -1,0 +1,6 @@
+@EndUserText.label: 'Access Control for ZI_BP'
+@MappingRole: true
+define role ZI_BP {
+  grant select on ZI_BP
+    where inheriting conditions from entity ZI_VENDOR;
+}

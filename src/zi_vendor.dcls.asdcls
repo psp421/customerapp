@@ -1,0 +1,6 @@
+@EndUserText.label: 'Access Control for ZI_VENDOR'
+@MappingRole: true
+define role ZI_VENDOR {
+  grant select on ZI_VENDOR
+    where (VendorNo) = aspect pfcg_auth(YVAR_VEND, YVAR_VNO, ACTVT = '03');
+}

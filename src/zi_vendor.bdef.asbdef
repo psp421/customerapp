@@ -1,0 +1,118 @@
+managed implementation in class zbp_i_vendor unique;
+strict ( 2 );
+with draft;
+
+/*
+  Root Entity: Vendor (ZXY_VENDOR)
+  Child Entity: BP     (ZXY_BP)
+
+  Draft tables:  ZXY_VENDORD (root),  ZXY_BPD (child)
+  Business logic:
+    - VendorNo starting with XYZ + digits → BpType = 'SUPP'
+    - VendorNo starting with ABC + digits → BpType = 'PART'
+*/
+
+define behavior for ZI_VENDOR alias Vendor
+  persistent table   zxy_vendor
+  draft table        zxy_vendord
+  lock master
+  total etag LastChangedAt
+  authorization master ( global )
+  etag master LocalLastChangedAt
+{
+  /* Key and admin fields are read-only */
+  field ( readonly )
+    VendorNo,
+    Uuid,
+    CreatedBy,
+    CreatedAt,
+    LastChangedBy,
+    LastChangedAt,
+    LocalLastChangedAt;
+
+  /* VendorName is mandatory */
+  field ( mandatory ) VendorName;
+
+  /* Standard CRUD operations */
+  create;
+  update;
+  delete;
+
+  /* Draft lifecycle actions */
+  draft action Edit;
+  draft action Activate optimized;
+  draft action Discard;
+  draft action Resume;
+  draft determine action Prepare;
+
+  /* Generate UUID on creation */
+  determination setVendorUuid on save { create; }
+
+  /* Child association with full draft support */
+  association _BP { create; with draft; }
+
+  /* Field mapping: CDS alias → DB column */
+  mapping for zxy_vendor corresponding
+  {
+    VendorNo             = vendor_no;
+    Uuid                 = uuid;
+    VendorName           = vendor_name;
+    Active               = active;
+    ValidStartDat        = valid_start_dat;
+    ValidEndDat          = valid_end_dat;
+    CreatedBy            = created_by;
+    CreatedAt            = created_at;
+    LastChangedBy        = last_changed_by;
+    LastChangedAt        = last_changed_at;
+    LocalLastChangedAt   = local_last_changed_at;
+  }
+}
+
+define behavior for ZI_BP alias BP
+  persistent table   zxy_bp
+  draft table        zxy_bpd
+  lock dependent by _Vendor
+  authorization dependent by _Vendor
+  etag master BpLocalLastChangedAt
+{
+  /* Key and admin fields are read-only */
+  field ( readonly )
+    BpNo,
+    BpUuid,
+    BpCreatedBy,
+    BpCreatedAt,
+    BpLastChangedBy,
+    BpLastChangedAt,
+    BpLocalLastChangedAt;
+
+  /* VendorNo cannot be changed after creation */
+  field ( readonly : update ) VendorNo;
+
+  /* Standard operations on child */
+  update;
+  delete;
+
+  /* Generate UUID for BP on creation */
+  determination setBpUuid on save { create; }
+
+  /* Auto-determine BP type from VendorNo pattern:
+     XYZ + digits → SUPP  |  ABC + digits → PART  */
+  determination setBpType on save { create; update; }
+
+  /* Parent association */
+  association _Vendor { with draft; }
+
+  /* Field mapping: CDS alias → DB column */
+  mapping for zxy_bp corresponding
+  {
+    BpNo                 = bp_no;
+    BpUuid               = uuid;
+    VendorNo             = vendor_no;
+    BpType               = bp_type;
+    BpCreatedBy          = created_by;
+    BpCreatedAt          = created_at;
+    BpLastChangedBy      = last_changed_by;
+    BpLastChangedAt      = last_changed_at;
+    BpLocalLastChangedAt = local_last_changed_at;
+  }
+}

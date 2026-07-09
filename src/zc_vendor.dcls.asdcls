@@ -1,0 +1,6 @@
+@EndUserText.label: 'Access Control for ZC_VENDOR'
+@MappingRole: true
+define role ZC_VENDOR {
+  grant select on ZC_VENDOR
+    where inheriting conditions from entity ZI_VENDOR;
+}
